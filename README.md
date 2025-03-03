@@ -19,13 +19,16 @@ httpclient $host $path
 ```
 mkdir _build && cd _build
 cmake ..
-#for sample : make sample
-make all
+make
 ```
 
 ## Sample
 
 ## Tests
+
+```
+cmake -B build -DBUILD_TESTS=ON
+```
 
 
 

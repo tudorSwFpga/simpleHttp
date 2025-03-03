@@ -7,61 +7,71 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "../include/tcp.hpp"
+#include <netdb.h>
 
-/**
- * @brief Establishes a connection to a remote server.
- * 
- * This method creates a socket and attempts to connect to the specified remote IP address and port.
- * If the socket creation fails, it throws a runtime error with the appropriate error message.
- * 
- * @param remPort The remote port to connect to.
- * @param remIp The remote IP address to connect to.
- * @return int Returns 0 on success, or -1 on failure.
- * @throws std::runtime_error If socket creation fails.
- */
-int TcpClient::connect(const uint16_t &remPort, const std::string &remIp)
+
+int TcpClient::connect(const uint16_t &remPort, const std::string &host)
 {
     struct sockaddr_in addr;
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
     {
-        throw std::runtime_error(std::strerror(errno));
+        spdlog::error("Failed to open socket");
+        return -1;
     }
 
-    memset(&addr, 0, sizeof(sockaddr_in)); // init address to 0
-    addr.sin_addr.s_addr = inet_addr(remIp.c_str());
+    struct hostent* server = gethostbyname(host.c_str());
+    if (!server) {
+        spdlog::error("Failed to resolve host: {0}", host);
+        close(sockfd);
+        return -1;
+    }
+    //set the server address and port
+    memset(&addr, 0, sizeof(sockaddr_in)); 
+    std::memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
     addr.sin_family = AF_INET;
     addr.sin_port = htons(remPort);
 
     m_sockfd = sockfd;
-    spdlog::debug("TcpClient {0} attempting connection to 127.0.0.1: {1} ", m_name, remPort);
+    spdlog::debug("TcpClient {0} attempting connection {1}: {2} ", m_name, host, remPort);
     auto ret = ::connect(sockfd, (const struct sockaddr *)&addr, sizeof(sockaddr_in));
     return ret;
 }
 
-/**
-* @brief Sends a message to the connected remote server.
-* 
-* This method sends the specified message to the remote server using the established TCP connection.
-* It uses the send system call to transmit the data.
-* 
-* @param msg The message to be sent to the remote server.
-* @return int The number of bytes sent on success, or -1 on failure.
-*/
 int TcpClient::send(const std::string &msg)
 {
-    spdlog::debug("TcpClient sending data");
-    return ::send(m_sockfd, msg.c_str(), sizeof(msg), 0);
+    size_t totalSent = 0;
+    while (totalSent < msg.size()) {
+        ssize_t sent = ::send(m_sockfd, msg.c_str() + totalSent, msg.size() - totalSent, 0);
+        if (sent < 0) {
+            spdlog::error("Send failed: {0}", strerror(errno));
+            close(m_sockfd);
+            return -1;
+        }
+        totalSent += sent;
+    }
+    return totalSent;
 }
 
 int TcpClient::recv(std::string &msg)
 {
     char buffer[4096];
-    int bytesRead = ::recv(m_sockfd, buffer, sizeof(buffer) - 1, 0);
-    if (bytesRead > 0)
-    {
+    int bytesRead = 0;
+    //set the timeout for the recv call
+    fd_set read_fds;
+    struct timeval timeout;
+    timeout.tv_sec = 5;  
+    timeout.tv_usec = 0;
+    FD_ZERO(&read_fds);
+    FD_SET(m_sockfd, &read_fds);
+    //receive the data
+    bytesRead = ::recv(m_sockfd, buffer, sizeof(buffer) - 1, 0);
+    if (bytesRead > 0) {
         buffer[bytesRead] = '\0';
-        msg = buffer;
+        msg += buffer;
+        spdlog::error("TcpClient::recv() {0} bytes", bytesRead);
+    } else {
+        spdlog::error("recv() failed: {0}", strerror(errno));
     }
     return bytesRead;
 }

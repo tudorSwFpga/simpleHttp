@@ -1,11 +1,13 @@
+
 #include "../include/http.hpp"
 #include "../include/tcp.hpp"
 
 
-HttpClient::HttpClient(const std::string& version):version_(version)
+HttpClient::HttpClient(const std::string& version,const std::string& verbosity):version_(version)
 {
+    spdlog::set_level(spdlog::level::from_str(verbosity));
     spdlog::debug("HttpClient Ctor");
-    if (version_.empty() && version_ != "1.0" && version_ != "1.1" && version_ != "2.0")
+    if (version_.empty() && version_ != "1.0" && version_ != "1.1")
     {
         throw std::invalid_argument("Invalid HTTP version");
     }
@@ -42,40 +44,53 @@ HttpClient::~HttpClient()
     spdlog::debug("HttpClient Dtor");
 }   
 
-std::optional<ConnectionError> HttpClient::get(const std::string& host, const std::string& path,const std::map<std::string, std::string>& opt_headers)
+
+GET_STATUS HttpClient::get(const std::string& host, const std::string& path,const std::map<std::string, std::string>& opt_headers)
 {
-    spdlog::debug("HttpClient get");
-    std::string request = "GET " + setHeader(host, path);
+    std::string request = "GET " + formatGetReq(host, path,opt_headers);
+    spdlog::debug("HttpClient::get \n{0}", request);
+    //connect to the host
     if (tcpClient_->connect(80, host) < 0)
     {
-        return ConnectionError::CONNECTION_FAILED;
+        return GET_STATUS::CONNECTION_FAILED;
     }
-
-    tcpClient_->send(request);
-    getAnswer();
-    response_callback_;
+    //send request
+    int bytes_sent = tcpClient_->send(request);
+    if (bytes_sent<=0) {
+        spdlog::error("HttpClient::get failed to send request");
+        return GET_STATUS::SEND_FAILED;
+    }
+    //get response from the server and call the callback
+    if (getAnswerFromHost() <= 0) {
+        spdlog::error("HttpClient::get failed to receive response");
+        return GET_STATUS::RECV_FAILED;
+    }
+    response_callback_(response_);
+    //disconnect from the server
     tcpClient_->disconnect();
-    return {};
+    return GET_STATUS::SUCCESS;
 }
 
-std::string HttpClient::setHeader(const std::string& host, const std::string& path)
+
+std::string HttpClient::formatGetReq(const std::string& host, const std::string& path,const std::map<std::string, std::string>& opt_headers)
 {
     std::string request = path + " " + "HTTP/" + version_ + "\r\n";
     request += "Host: " + host + "\r\n";
+    for (const auto& [key, value] : opt_headers) {
+        request += key + ": " + value + "\r\n";
+    }
     request += "Connection: close\r\n\r\n";
 
     return request;
 }
 
-std::optional<ConnectionError> HttpClient::getAnswer()
-{
-    if ( tcpClient_->recv(response_) <= 0) {
-        return ConnectionError::RECV_FAILED;
-    }
 
-    return {};
+int HttpClient::getAnswerFromHost()
+{
+    return tcpClient_->recv(response_);
 }
 
-void HttpClient::add_get_cb(ResponseCallback callback) {
+
+void HttpClient::addGetCb(ResponseCallback callback) {
     response_callback_ = callback;
 }

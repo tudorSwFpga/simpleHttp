@@ -21,9 +21,32 @@ public:
     }
 
     const std::string m_name;
-
-    int connect(const uint16_t &remPort, const std::string &remIp);
+    /**
+    * @brief Establishes a connection to a remote server.
+    * 
+    * This method creates a socket and attempts to connect to the specified host and port.
+    * If the socket creation fails, it throws a runtime error with the appropriate error message.
+    * 
+    * @param remPort The remote port to connect to.
+    * @param host The host to connect to.
+    * @return int Returns 0 on success, or -1 on failure.
+    */
+    int connect(const uint16_t &remPort, const std::string &host);
+    /**
+    * @brief Sends a message to the connected remote server.
+    * 
+    * This method sends the specified message to the remote server using the established TCP connection.
+    * 
+    * @param msg The message to be sent to the remote server.
+    * @return int The number of bytes sent on success, or -1 on failure.
+    */
     int send(const std::string &msg);
+    /**
+    * @brief Attempts receiving a message from the connected remote server.
+    *  
+    * @param msg The message received from the remote server.
+    * @return int The number of bytes received on success, or -1/0 on failure.
+    */
     int recv(std::string &msg);
     int disconnect();
 

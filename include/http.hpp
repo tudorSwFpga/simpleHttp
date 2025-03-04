@@ -8,13 +8,18 @@
 #include <string>
 #include <sys/types.h>
 
-enum class GET_STATUS {
+enum class RequestStatus {
   SOCKET_CREATION_FAILED,
   CONNECTION_FAILED,
   SEND_FAILED,
   RECV_FAILED,
   DISCONNECT_FAILED,
   SUCCESS
+};
+
+struct Response {
+  RequestStatus status;
+  int ret_code;
 };
 
 using ResponseCallback = std::function<void(const std::string &)>;
@@ -52,8 +57,8 @@ public:
    * @param opt_headers Optional headers to include in the request.
    * @return GET_STATUS The status of the GET request.
    */
-  GET_STATUS get(const std::string &host, const std::string &path,
-                 const std::map<std::string, std::string> &opt_headers = {});
+  Response get(const std::string &host, const std::string &path,
+               const std::map<std::string, std::string> &opt_headers = {});
   /**
    * @brief Adds a callback to be called when a response is received.
    *
@@ -81,4 +86,5 @@ private:
    * @return int The number of bytes received.
    */
   int getAnswerFromHost();
+  int generateGETReturnCode(const std::string &response);
 };

@@ -19,6 +19,6 @@ add_subdirectory(sample)
 
 if(BUILD_TESTS)
     # Add the test directory to the build
-    add_subdirectory(test)
+    add_subdirectory(tests)
 endif()
 

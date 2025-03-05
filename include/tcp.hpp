@@ -1,9 +1,9 @@
 
-#include "spdlog/spdlog.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <list>
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>

@@ -30,17 +30,17 @@ TEST(GET, ConnectionFailed) {
 TEST(GET, v1_0_callback) {
   HttpClient client("1.0");
   client.addGetCb([](const std::string &response) {
-    if (response.size() != 1521) {
-      throw std::runtime_error("Response size is not 1521 but " +
+    if (response.size() != 3910) {
+      throw std::runtime_error("Response size is not 3910 but " +
                                std::to_string(response.size()));
     }
-    // check version 1.1
+    // check version 1.0
     if (response.find("HTTP/1.0 200 OK") == std::string::npos) {
       throw std::runtime_error(
           "Response does not contain valid HTTP/1.0 answer");
     }
   });
-  auto ret = client.get("example.com", "/");
+  auto ret = client.get("httpbin.io", "/html");
   const Response exp = {RequestStatus::SUCCESS, 200};
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
@@ -48,8 +48,9 @@ TEST(GET, v1_0_callback) {
 TEST(GET, v1_1_callback) {
   HttpClient client("1.1");
   client.addGetCb([](const std::string &response) {
-    if (response.size() != 1521) {
-      throw std::runtime_error("Response size is not 1521 but " +
+    std::cout << response << std::endl;
+    if (response.size() != 636) {
+      throw std::runtime_error("Response size is not 636 but " +
                                std::to_string(response.size()));
     }
     // check version 1.1
@@ -58,7 +59,7 @@ TEST(GET, v1_1_callback) {
           "Response does not contain valid HTTP/1.1 answer");
     }
   });
-  auto ret = client.get("example.com", "/");
+  auto ret = client.get("httpbin.io", "/json");
   const Response exp = {RequestStatus::SUCCESS, 200};
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
@@ -85,6 +86,13 @@ TEST(MvCtor, WO_cb) {
 //         exp.ret_code); EXPECT_EQ(ret.status, exp.status);
 //     }
 // }
+
+// Run all the tests
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
 // todo: test unknown host (seems to hang on statuscode.me)
 // todo: test invalid path
 // todo: test reusing the same client object for multiple requests

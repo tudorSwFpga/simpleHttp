@@ -54,8 +54,7 @@ HttpClient::get(const std::string &host, const std::string &path,
   if (response_callback_) {
     response_callback_(response_);
   }
-  // disconnect from the server
-  tcpClient_->disconnect();
+
   ret.status = RequestStatus::SUCCESS;
   return ret;
 }
@@ -68,7 +67,7 @@ std::string HttpClient::formatGetReq(
   for (const auto &[key, value] : opt_headers) {
     request += key + ": " + value + "\r\n";
   }
-  request += "Connection: close\r\n\r\n";
+  request += "\r\n";
 
   return request;
 }

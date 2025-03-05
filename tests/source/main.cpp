@@ -2,8 +2,16 @@
 #include "gtest/gtest.h"
 #include <iostream>
 
-// test simple get request
-TEST(GET, OK) {
+// test simple get request for 1.0 version
+TEST(GET, simplev10) {
+  HttpClient client("1.0");
+  auto ret = client.get("httpbin.io", "/html");
+  const Response exp = {RequestStatus::SUCCESS, 200};
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+}
+// test simple get request for 1.1 version
+TEST(GET, simplev11) {
   HttpClient client("1.1");
   auto ret = client.get("httpbin.io", "/html");
   const Response exp = {RequestStatus::SUCCESS, 200};
@@ -27,6 +35,7 @@ TEST(GET, ConnectionFailed) {
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
+// test 1.0 http get with callback
 TEST(GET, v1_0_callback) {
   HttpClient client("1.0");
   client.addGetCb([](const std::string &response) {
@@ -45,6 +54,7 @@ TEST(GET, v1_0_callback) {
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
+// test 1.1 http get with callback
 TEST(GET, v1_1_callback) {
   HttpClient client("1.1");
   client.addGetCb([](const std::string &response) {
@@ -64,12 +74,35 @@ TEST(GET, v1_1_callback) {
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
-
+// test move constructor
 TEST(MvCtor, WO_cb) {
   HttpClient client("1.1", "debug");
   HttpClient client2(std::move(client));
   auto ret = client2.get("example.com", "/");
   const Response exp = {RequestStatus::SUCCESS, 200};
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+}
+// test simple get request with headers
+TEST(GET, keepavalive) {
+  HttpClient client("1.1", "debug");
+  auto ret = client.get("httpbin.io", "/html", {{"Connection", "keep-alive"}});
+  const Response exp = {RequestStatus::SUCCESS, 200};
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+  ret = client.get("httpbin.io", "/json");
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+}
+TEST(GET, wrong_path) {
+  HttpClient client("1.1", "debug");
+  auto ret =
+      client.get("httpbin.io", "/doesnotexist", {{"Connection", "keep-alive"}});
+  //{"Keep-Alive": "timeout=5, max=200"}});
+  Response exp = {RequestStatus::SUCCESS, 404};
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+  ret = client.get("httpbin.io", "/json");
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
@@ -92,7 +125,3 @@ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
-// todo: test unknown host (seems to hang on statuscode.me)
-// todo: test invalid path
-// todo: test reusing the same client object for multiple requests

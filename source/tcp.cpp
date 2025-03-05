@@ -95,7 +95,7 @@ int TcpClient::recv(std::string &msg) {
   FD_SET(sockfd_, &read_fds);
   // receive the data
   bytesRead = ::recv(sockfd_, buffer, sizeof(buffer) - 1, 0);
-  if (bytesRead > 0) {
+  if (bytesRead >= 0) {
     buffer[bytesRead] = '\0';
     msg += buffer;
     spdlog::info("TcpClient::recv() {0} bytes", bytesRead);

@@ -12,9 +12,12 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(test source/main.cpp)
-target_link_libraries( test GTest::gtest_main http_lib )
+target_link_libraries(test GTest::gtest_main http_lib )
 
 # Include the main include directory
 target_include_directories(test PRIVATE 
     ${PROJECT_SOURCE_DIR}/include
 )
+
+add_test(NAME test COMMAND test)
+ 

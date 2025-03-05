@@ -16,7 +16,12 @@ enum class RequestStatus {
   DISCONNECT_FAILED,
   SUCCESS
 };
-
+/**
+ * @struct Response
+ * @brief A struct to hold the response from an HTTP GET request.
+ * status: The status of the request, indicating eventual nework issues
+ * ret_code: The return code of the request (e.g., 200, 404, etc.).
+ */
 struct Response {
   RequestStatus status;
   int ret_code;
@@ -55,7 +60,7 @@ public:
    * @param host The host to connect to.
    * @param path The path to request.
    * @param opt_headers Optional headers to include in the request.
-   * @return GET_STATUS The status of the GET request.
+   * @return Response The status of the GET request.
    */
   Response get(const std::string &host, const std::string &path,
                const std::map<std::string, std::string> &opt_headers = {});
@@ -67,7 +72,9 @@ public:
   void addGetCb(ResponseCallback callback);
 
 private:
+  // response callback called when a response is received
   ResponseCallback response_callback_;
+  // tcp client object used to communicate with peer
   std::unique_ptr<TcpClient> tcpClient_;
   std::string version_;
   std::string response_;
@@ -86,5 +93,9 @@ private:
    * @return int The number of bytes received.
    */
   int getAnswerFromHost();
+  /**
+   * @brief Parses the server answer and detects the return code .
+   * @return int The return code (e.g., 200, 404, etc.).
+   */
   int generateGETReturnCode(const std::string &response);
 };

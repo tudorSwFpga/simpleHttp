@@ -36,26 +36,31 @@ int TcpClient::connect(const uint16_t &remPort, const std::string &host) {
     spdlog::debug("TcpClient {0} already connected", m_name);
     return 0;
   }
-  struct sockaddr_in addr;
+  // get the host address
+  struct addrinfo hints{}, *res;
+  hints.ai_family = AF_INET;
+  if (getaddrinfo(host.c_str(), nullptr, &hints, &res) != 0) {
+    spdlog::error("Failed to resolve host address\n");
+    return -1;
+  }
+  // create socket
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
     spdlog::error("Failed to open socket");
     return -1;
   }
-
-  struct hostent *server = gethostbyname(host.c_str());
-  if (!server) {
-    spdlog::error("Failed to resolve host: {0}", host);
-    close(sockfd);
-    return -1;
-  }
-  // set the server address and port
-  memset(&addr, 0, sizeof(sockaddr_in));
-  std::memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(remPort);
-
   sockfd_ = sockfd;
+  // connect to the remote host
+  sockaddr_in addr{};
+  if (res->ai_family == AF_INET) {
+    memset(&addr, 0, sizeof(sockaddr_in));
+    std::memcpy(&addr.sin_addr.s_addr,
+                &reinterpret_cast<sockaddr_in *>(res->ai_addr)->sin_addr,
+                sizeof(in_addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(remPort);
+  }
+  freeaddrinfo(res);
   spdlog::debug("TcpClient {0} attempting connection {1}: {2} ", m_name, host,
                 remPort);
   auto ret =
@@ -103,20 +108,4 @@ int TcpClient::recv(std::string &msg) {
 int TcpClient::disconnect() {
   spdlog::debug("TcpClient disconnecting");
   return close(sockfd_);
-}
-
-/**
- * @brief Retrieves the port number of the local endpoint of the TCP connection.
- *
- * This function uses the getsockname system call to obtain the local address
- * and port number associated with the socket. It then extracts and returns
- * the port number.
- *
- * @return uint16_t The port number of the local endpoint.
- */
-uint16_t TcpClient::getMyPort() {
-  struct sockaddr_in peerAddr;
-  socklen_t socketSize = sizeof(peerAddr);
-  ::getsockname(sockfd_, (struct sockaddr *)&peerAddr, &socketSize);
-  return peerAddr.sin_port;
 }

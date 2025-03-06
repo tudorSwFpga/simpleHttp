@@ -35,7 +35,9 @@ A [sample](https://github.com/tudorSwFpga/simpleHttp/tree/main/sample/source) ap
 The sample will send a get request to a host and path (given in the program's input) and will print the received answer
 
 ```
-httpclient $host $path
+cd sample
+#./sample $host $path
+./sample httpbin.io /html
 ```
 
 ## Tests

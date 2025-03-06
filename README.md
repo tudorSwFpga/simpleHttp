@@ -8,6 +8,7 @@ This project proposes a simple C++ API for implementing an HTTP Client. The foll
 - HTTP Requests : GET
 - HTTP Version : 1.0, 1.1
 - OS : Linux
+It is meant to be future-proof, either in terms of supporting later HTTP versions or adding other HTTP requests.
 
 ### Class descripton
 
@@ -21,7 +22,7 @@ For more details regarding the exposed API please refer to the [class header](ht
 
 ## Build 
 
-The only external dependency is spdlog; cmake will handle that for you
+The only external dependencies are spdlog for logging and gtest for testing; cmake will handle that for you
 
 ```
 mkdir _build && cd _build

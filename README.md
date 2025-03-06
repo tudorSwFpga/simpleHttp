@@ -41,10 +41,36 @@ httpclient $host $path
 ## Tests
 
 A series of unit tests are implemented in the [here](https://github.com/tudorSwFpga/simpleHttp/blob/main/tests/source/main.cpp). 
-In order to launch them:
+In order to have the list (suite name / test name):
 
 ```
-cd _build && ctest --test-dir tests
+cd _build/tests && ./test --gtest_list_tests
+##output
+get.
+  version_1_0
+  version_1_1
+  host_connection_failed
+  wrong_path
+add_callback.
+  v1_0
+  v1_1
+move_constructor.
+  successful_request
+headers.
+  keepavalive
+  other_headers
+
+```
+
+You can launch one of the tests, one of the suits or all of them:
+
+```
+#launch all
+./test
+#launch only get.version_1_0
+./test --gtest_filter=get.version_1_0
+#launch all get tests
+./test --gtest_filter="get*"
 ```
 
 

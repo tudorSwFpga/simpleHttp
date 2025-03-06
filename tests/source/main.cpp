@@ -3,7 +3,7 @@
 #include <iostream>
 
 // test simple get request for 1.0 version
-TEST(GET, simplev10) {
+TEST(get, version_1_0) {
   HttpClient client("1.0");
   auto ret = client.get("httpbin.io", "/html");
   const Response exp = {RequestStatus::SUCCESS, 200};
@@ -11,32 +11,36 @@ TEST(GET, simplev10) {
   EXPECT_EQ(ret.status, exp.status);
 }
 // test simple get request for 1.1 version
-TEST(GET, simplev11) {
+TEST(get, version_1_1) {
   HttpClient client("1.1");
   auto ret = client.get("httpbin.io", "/html");
   const Response exp = {RequestStatus::SUCCESS, 200};
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
-// test simple get request with headers
-TEST(GET, OK_with_headers) {
-  HttpClient client("1.1");
-  auto ret = client.get("example.com", "/",
-                        {{"User-Agent", "HttpClient/1.0"}, {"Accept", "*/*"}});
-  const Response exp = {RequestStatus::SUCCESS, 200};
-  EXPECT_EQ(ret.ret_code, exp.ret_code);
-  EXPECT_EQ(ret.status, exp.status);
-}
+
 // test get request with failed connection establishment
-TEST(GET, ConnectionFailed) {
+TEST(get, host_connection_failed) {
   HttpClient client("1.1", "debug");
   auto ret = client.get("deadbeedcafe.com", "/");
   const Response exp = {RequestStatus::CONNECTION_FAILED, -1};
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
+TEST(get, wrong_path) {
+  HttpClient client("1.1", "debug");
+  auto ret =
+      client.get("httpbin.io", "/doesnotexist", {{"Connection", "keep-alive"}});
+  //{"Keep-Alive": "timeout=5, max=200"}});
+  Response exp = {RequestStatus::SUCCESS, 404};
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+  ret = client.get("httpbin.io", "/json");
+  EXPECT_EQ(ret.ret_code, exp.ret_code);
+  EXPECT_EQ(ret.status, exp.status);
+}
 // test 1.0 http get with callback
-TEST(GET, v1_0_callback) {
+TEST(add_callback, v1_0) {
   HttpClient client("1.0");
   client.addGetCb([](const std::string &response) {
     if (response.size() != 3910) {
@@ -55,7 +59,7 @@ TEST(GET, v1_0_callback) {
   EXPECT_EQ(ret.status, exp.status);
 }
 // test 1.1 http get with callback
-TEST(GET, v1_1_callback) {
+TEST(add_callback, v1_1) {
   HttpClient client("1.1");
   client.addGetCb([](const std::string &response) {
     std::cout << response << std::endl;
@@ -75,7 +79,7 @@ TEST(GET, v1_1_callback) {
   EXPECT_EQ(ret.status, exp.status);
 }
 // test move constructor
-TEST(MvCtor, WO_cb) {
+TEST(move_constructor, successful_request) {
   HttpClient client("1.1", "debug");
   HttpClient client2(std::move(client));
   auto ret = client2.get("example.com", "/");
@@ -84,7 +88,7 @@ TEST(MvCtor, WO_cb) {
   EXPECT_EQ(ret.status, exp.status);
 }
 // test simple get request with headers
-TEST(GET, keepavalive) {
+TEST(headers, keepavalive) {
   HttpClient client("1.1", "debug");
   auto ret = client.get("httpbin.io", "/html", {{"Connection", "keep-alive"}});
   const Response exp = {RequestStatus::SUCCESS, 200};
@@ -94,18 +98,16 @@ TEST(GET, keepavalive) {
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
-TEST(GET, wrong_path) {
-  HttpClient client("1.1", "debug");
-  auto ret =
-      client.get("httpbin.io", "/doesnotexist", {{"Connection", "keep-alive"}});
-  //{"Keep-Alive": "timeout=5, max=200"}});
-  Response exp = {RequestStatus::SUCCESS, 404};
-  EXPECT_EQ(ret.ret_code, exp.ret_code);
-  EXPECT_EQ(ret.status, exp.status);
-  ret = client.get("httpbin.io", "/json");
+// test simple get request with headers
+TEST(headers, other_headers) {
+  HttpClient client("1.1");
+  auto ret = client.get("example.com", "/",
+                        {{"User-Agent", "HttpClient/1.0"}, {"Accept", "*/*"}});
+  const Response exp = {RequestStatus::SUCCESS, 200};
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
+
 // TEST(GET, Error_cases) {
 
 //     Response exp = {RequestStatus::SUCCESS, -1};

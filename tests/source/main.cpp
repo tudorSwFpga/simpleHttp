@@ -18,7 +18,6 @@ TEST(get, version_1_1) {
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
 }
-
 // test get request with failed connection establishment
 TEST(get, host_connection_failed) {
   HttpClient client("1.1", "debug");
@@ -79,13 +78,21 @@ TEST(add_callback, v1_1) {
   EXPECT_EQ(ret.status, exp.status);
 }
 // test move constructor
-TEST(move_constructor, successful_request) {
+TEST(constructor, move) {
   HttpClient client("1.1", "debug");
   HttpClient client2(std::move(client));
   auto ret = client2.get("example.com", "/");
   const Response exp = {RequestStatus::SUCCESS, 200};
   EXPECT_EQ(ret.ret_code, exp.ret_code);
   EXPECT_EQ(ret.status, exp.status);
+}
+// test move constructor
+TEST(constructor, wrong_version) {
+  try {
+    HttpClient client("1.2", "debug");
+  } catch (const std::runtime_error &e) {
+    EXPECT_STREQ(e.what(), "Invalid HTTP version");
+  }
 }
 // test simple get request with headers
 TEST(headers, keepavalive) {
